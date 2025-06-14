@@ -4,53 +4,40 @@ set -e
 echo "🚀 ADHD Ace Installer"
 echo "============================"
 
-# ----------------------------
 # Prompt user for Gemini API key
-# ----------------------------
-echo "🔑 To continue, you need a Gemini API key from Google AI Studio."
+echo "🔑 You need a Gemini API key from Google AI Studio."
 echo "Visit: https://makersuite.google.com/app/apikey to generate one."
 read -p "👉 Paste your Gemini API key: " api_key
 
-# ----------------------------
-# Define Paths
-# ----------------------------
+# Define paths
 REPO_URL="https://github.com/Marrowdust/AdhdAce.git"
 INSTALL_PARENT="$HOME/adhdace"
 INSTALL_DIR="$INSTALL_PARENT/AdhdAce"
 SCRIPT_PATH="$HOME/start-adhdace.sh"
 DESKTOP_FILE="$HOME/.local/share/applications/adhdace.desktop"
+ICON_URL="https://raw.githubusercontent.com/Marrowdust/AdhdAce/main/icon.png"
 ICON_DEST="$HOME/.local/share/icons/adhdace-icon.png"
 LOG="/tmp/adhdace_next_output.log"
 
-# ----------------------------
-# Remove old desktop shortcut
-# ----------------------------
-[ -f "$DESKTOP_FILE" ] && rm "$DESKTOP_FILE"
-
-# ----------------------------
-# Clone the repo
-# ----------------------------
-echo "📦 Cloning AdhdAce repo..."
+# Clean old install
+rm -f "$DESKTOP_FILE"
 rm -rf "$INSTALL_PARENT"
+
+# Clone repo
+echo "📦 Cloning repo..."
 mkdir -p "$INSTALL_PARENT"
 git clone "$REPO_URL" "$INSTALL_DIR"
-
-# ----------------------------
-# Install dependencies
-# ----------------------------
 cd "$INSTALL_DIR"
+
+# Install dependencies
 echo "📚 Installing dependencies..."
 npm install
 
-# ----------------------------
-# Write new .env file
-# ----------------------------
-echo "🧪 Creating clean .env file with your key..."
+# Write clean .env file
+echo "🧪 Writing .env file..."
 echo "GOOGLE_API_KEY=\"$api_key\"" > .env
 
-# ----------------------------
 # Create launch script
-# ----------------------------
 echo "📜 Creating launch script..."
 cat <<EOF > "$SCRIPT_PATH"
 #!/bin/bash
@@ -66,7 +53,7 @@ for i in {1..30}; do
   if [[ -n "\$URL" ]]; then break; fi
 done
 if [[ -n "\$URL" ]]; then
-  brave "\$URL" >/dev/null 2>&1 &
+  nohup brave "\$URL" >/dev/null 2>&1 &
 else
   notify-send "AdhdAce" "❌ Could not find running app URL"
 fi
@@ -74,15 +61,18 @@ EOF
 
 chmod +x "$SCRIPT_PATH"
 
-# ----------------------------
-# Create .desktop shortcut
-# ----------------------------
-echo "🧩 Creating desktop launcher..."
+# Download icon
+echo "🖼️ Downloading icon..."
+mkdir -p "$(dirname "$ICON_DEST")"
+curl -s -o "$ICON_DEST" "$ICON_URL"
+
+# Create desktop launcher
+echo "🧩 Creating desktop shortcut..."
 mkdir -p "$(dirname "$DESKTOP_FILE")"
 cat <<EOF > "$DESKTOP_FILE"
 [Desktop Entry]
 Name=AdhdAce App
-Exec=bash $SCRIPT_PATH
+Exec=bash -c 'nohup "$SCRIPT_PATH" & disown'
 Icon=$ICON_DEST
 Type=Application
 Terminal=false
@@ -92,8 +82,7 @@ EOF
 chmod +x "$DESKTOP_FILE"
 update-desktop-database "$HOME/.local/share/applications/" 2>/dev/null || true
 
-# ----------------------------
 # Done
-# ----------------------------
-echo "✅ Done! Launch AdhdAce from your applications menu or with:"
+echo "✅ Installation complete!"
+echo "👉 You can now run AdhdAce from your app menu or with:"
 echo "   bash $SCRIPT_PATH"
