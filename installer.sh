@@ -1,14 +1,15 @@
 #!/bin/bash
-
 set -e
 
 echo "🚀 ADHD Ace Installer"
-echo "========================="
+echo "============================"
 
 # ----------------------------
-# Ask for Google API Key
+# Prompt user for Gemini API key
 # ----------------------------
-read -p "🔐 Enter your Google AI API Key: " api_key
+echo "🔑 To continue, you need a Gemini API key from Google AI Studio."
+echo "Visit: https://makersuite.google.com/app/apikey to generate one."
+read -p "👉 Paste your Gemini API key: " api_key
 
 # ----------------------------
 # Define Paths
@@ -22,37 +23,33 @@ ICON_DEST="$HOME/.local/share/icons/adhdace-icon.png"
 LOG="/tmp/adhdace_next_output.log"
 
 # ----------------------------
-# Delete existing .desktop file if exists
+# Remove old desktop shortcut
 # ----------------------------
-if [ -f "$DESKTOP_FILE" ]; then
-  echo "🗑️ Removing existing desktop shortcut..."
-  rm "$DESKTOP_FILE"
-fi
+[ -f "$DESKTOP_FILE" ] && rm "$DESKTOP_FILE"
 
 # ----------------------------
-# Clone the repository
+# Clone the repo
 # ----------------------------
-echo "📦 Cloning AdhdAce repository..."
+echo "📦 Cloning AdhdAce repo..."
 rm -rf "$INSTALL_PARENT"
 mkdir -p "$INSTALL_PARENT"
 git clone "$REPO_URL" "$INSTALL_DIR"
 
-cd "$INSTALL_DIR" || exit 1
-
 # ----------------------------
 # Install dependencies
 # ----------------------------
-echo "📚 Installing Node dependencies..."
+cd "$INSTALL_DIR"
+echo "📚 Installing dependencies..."
 npm install
 
 # ----------------------------
-# Create new .env file
+# Write new .env file
 # ----------------------------
-echo "⚙️ Creating .env file with your API key..."
+echo "🧪 Creating clean .env file with your key..."
 echo "GOOGLE_API_KEY=\"$api_key\"" > .env
 
 # ----------------------------
-# Create run script
+# Create launch script
 # ----------------------------
 echo "📜 Creating launch script..."
 cat <<EOF > "$SCRIPT_PATH"
@@ -71,14 +68,14 @@ done
 if [[ -n "\$URL" ]]; then
   brave "\$URL" >/dev/null 2>&1 &
 else
-  notify-send "AdhdAce" "❌ Could not find Next.js URL"
+  notify-send "AdhdAce" "❌ Could not find running app URL"
 fi
 EOF
 
 chmod +x "$SCRIPT_PATH"
 
 # ----------------------------
-# Create desktop shortcut
+# Create .desktop shortcut
 # ----------------------------
 echo "🧩 Creating desktop launcher..."
 mkdir -p "$(dirname "$DESKTOP_FILE")"
@@ -93,11 +90,10 @@ Categories=Development;
 EOF
 
 chmod +x "$DESKTOP_FILE"
-update-desktop-database "$HOME/.local/share/applications/"
+update-desktop-database "$HOME/.local/share/applications/" 2>/dev/null || true
 
 # ----------------------------
-# Done!
+# Done
 # ----------------------------
-echo "✅ Installation complete!"
-echo "🧠 You can now run it from your system launcher or with:"
+echo "✅ Done! Launch AdhdAce from your applications menu or with:"
 echo "   bash $SCRIPT_PATH"
