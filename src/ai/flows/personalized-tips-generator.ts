@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -19,17 +20,21 @@ const PersonalizedTipInputSchema = z.object({
     ),
   timeOfDay: z
     .string()
-    .describe('The current time of day (e.g., morning, afternoon, evening).'),
+    .describe('The current broad time of day (e.g., morning, afternoon, evening).'),
   challenges: z
     .string()
     .describe(
       'Any blocks or challenges the user is currently facing (e.g., distraction, procrastination).'
     ),
+  currentHour: z.number().min(0).max(23).describe('The current hour of the day (0-23).'),
+  hoursBeforeSleep: z.number().optional().describe('How many hours are left before the user plans to sleep.'),
+  sleepinessLevel: z.string().describe('The user\'s current sleepiness level (e.g., Not Sleepy, Slightly Sleepy, Moderately Sleepy, Very Sleepy).'),
+  isMedicated: z.boolean().describe('Whether the user is currently medicated (e.g., for ADHD).'),
 });
 export type PersonalizedTipInput = z.infer<typeof PersonalizedTipInputSchema>;
 
 const PersonalizedTipOutputSchema = z.object({
-  tip: z.string().describe('A personalized tip for the user.'),
+  tip: z.string().describe('A highly personalized, actionable, and clear tip for the user.'),
 });
 export type PersonalizedTipOutput = z.infer<typeof PersonalizedTipOutputSchema>;
 
@@ -43,16 +48,33 @@ const prompt = ai.definePrompt({
   name: 'personalizedTipPrompt',
   input: {schema: PersonalizedTipInputSchema},
   output: {schema: PersonalizedTipOutputSchema},
-  prompt: `You are an AI assistant designed to provide personalized tips to users based on their current state and the time of day.
+  prompt: `You are an AI assistant expert in ADHD coaching. Your task is to provide ONE extremely clear, actionable, and personalized tip.
 
-  Current State: {{{currentState}}}
-  Time of Day: {{{timeOfDay}}}
-  Challenges: {{{challenges}}}
+User's Context:
+- Current State: {{{currentState}}}
+- Broad Time of Day: {{{timeOfDay}}}
+- Specific Hour: {{{currentHour}}}
+- Current Challenges/Blocks: {{{challenges}}}
+- Hours Before Sleep: {{{hoursBeforeSleep}}} (if available)
+- Sleepiness Level: {{{sleepinessLevel}}}
+- Medicated Status: {{#if isMedicated}}Currently Medicated{{else}}Not Currently Medicated{{/if}}
 
-  Generate a single, actionable tip that the user can implement immediately to improve their focus, reduce stress, and enhance productivity.
-  Keep the tip concise and easy to understand. Focus on specific strategies or techniques.
-  Consider both the current state, the time of day and the challenges to generate the tip.
-  `,
+Based on ALL the details above, generate a single, highly specific, and immediately implementable tip.
+The tip should directly address the user's situation. Be very explicit.
+
+Examples of good, clear tips:
+- "Since you're feeling {{{currentState}}} and facing {{{challenges}}}, try the '5-minute rule': commit to working on [specific task related to challenge] for just 5 minutes. Often, starting is the hardest part."
+- "Given it's {{{currentHour}}}:00 and your sleepiness is '{{{sleepinessLevel}}}', if you have {{{hoursBeforeSleep}}} hours before bed, consider a 15-minute screen-free wind-down now to prepare for better sleep."
+- "As you're {{{currentState}}} and {{#if isMedicated}}medicated{{else}}not medicated{{/if}}, tackle the part of {{{challenges}}} that requires the most focus first, for about 20 minutes, then take a brief walk."
+
+The tip should be:
+1.  **Personalized**: Directly reference the user's inputs.
+2.  **Actionable**: Tell the user *what* to do.
+3.  **Clear & Concise**: Easy to understand and implement immediately.
+4.  **Supportive**: Maintain an encouraging tone.
+
+Generate only one such tip.
+`,
 });
 
 const personalizedTipFlow = ai.defineFlow(

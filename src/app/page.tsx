@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { SiteHeader } from '@/components/SiteHeader';
-import { DailyInputForm } from '@/components/DailyInputForm';
+import { DailyInputForm, AiInputFormValues as DailyInputFormAiValues } from '@/components/DailyInputForm';
 import { ScheduleDisplay } from '@/components/ScheduleDisplay';
 import { TipDisplay } from '@/components/TipDisplay';
 import { ProgressSection } from '@/components/ProgressSection';
@@ -16,11 +17,14 @@ import { achievements as achievementConfig } from '@/config/achievements';
 import { format } from 'date-fns';
 import { Loader2, RefreshCw } from 'lucide-react';
 
-const LOCAL_STORAGE_KEY = 'adhdAceData';
+const LOCAL_STORAGE_KEY = 'adhdAceDataV2'; // Incremented version for new data structure
+
+// Combine AI input types for easier state management
+type CombinedAiInputs = GenerateDailyScheduleInput & PersonalizedTipInput;
 
 export default function Home() {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true); // For initial data load
+  const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   
   const [currentSchedule, setCurrentSchedule] = useState<GenerateDailyScheduleOutput | undefined>(undefined);
@@ -28,7 +32,7 @@ export default function Home() {
   const [dailyLogs, setDailyLogs] = useState<DailyLog[]>([]);
   const [unlockedAchievements, setUnlockedAchievements] = useState<string[]>([]);
 
-  const [lastAiInputs, setLastAiInputs] = useState<GenerateDailyScheduleInput & PersonalizedTipInput | undefined>(undefined);
+  const [lastAiInputs, setLastAiInputs] = useState<Partial<CombinedAiInputs> | undefined>(undefined);
 
   const loadData = useCallback(() => {
     setIsLoading(true);
@@ -39,10 +43,10 @@ export default function Home() {
         setDailyLogs(parsedData.dailyLogs || []);
         setUnlockedAchievements(parsedData.unlockedAchievements || []);
         
-        // Load last AI inputs if available to prefill form
         const todayStr = format(new Date(), 'yyyy-MM-dd');
         const todayLog = parsedData.dailyLogs?.find(log => log.date === todayStr);
-        if (todayLog && todayLog.dailyInputAcademicLoad) { // Check one field as proxy
+
+        if (todayLog) {
             setLastAiInputs({
                 energyLevel: todayLog.dailyInputEnergyLevel,
                 focusQuality: todayLog.dailyInputFocusQuality,
@@ -50,11 +54,38 @@ export default function Home() {
                 academicLoad: todayLog.dailyInputAcademicLoad,
                 currentState: todayLog.dailyInputCurrentState,
                 challenges: todayLog.dailyInputChallenges,
+                currentHour: todayLog.dailyInputCurrentHour,
+                hoursBeforeSleep: todayLog.dailyInputHoursBeforeSleep,
+                sleepinessLevel: todayLog.dailyInputSleepinessLevel,
+                isMedicated: todayLog.dailyInputIsMedicated,
             });
             if (todayLog.generatedSchedule) setCurrentSchedule(todayLog.generatedSchedule);
             if (todayLog.generatedTip) setCurrentTip(todayLog.generatedTip);
+        } else {
+            // Set defaults if no log for today, especially for new fields
+            const currentHour = new Date().getHours();
+            setLastAiInputs(prev => ({
+                ...prev,
+                currentHour: currentHour,
+                timeOfDay: prev?.timeOfDay || (currentHour >= 5 && currentHour < 12 ? 'Morning' : currentHour >= 12 && currentHour < 18 ? 'Afternoon' : 'Evening'),
+                sleepinessLevel: prev?.sleepinessLevel || 'Not Sleepy',
+                isMedicated: prev?.isMedicated === undefined ? false : prev.isMedicated, // Default to false if undefined
+            }));
         }
-
+      } else {
+        // Initialize with dynamic defaults if no stored data at all
+        const currentHour = new Date().getHours();
+        setLastAiInputs({
+            currentHour: currentHour,
+            timeOfDay: currentHour >= 5 && currentHour < 12 ? 'Morning' : currentHour >= 12 && currentHour < 18 ? 'Afternoon' : 'Evening',
+            energyLevel: 'Average',
+            focusQuality: 'Medium',
+            academicLoad: 'Medium',
+            sleepinessLevel: 'Not Sleepy',
+            isMedicated: false,
+            currentState: '',
+            challenges: '',
+        });
       }
     } catch (error) {
       console.error("Failed to load data from localStorage:", error);
@@ -78,9 +109,8 @@ export default function Home() {
   }, [loadData]);
 
   useEffect(() => {
-    if (!isLoading) { // Only save if not in initial load phase
+    if (!isLoading) { 
         saveData();
-        // Check for new achievements
         const newlyUnlocked = achievementConfig
           .filter(ach => !unlockedAchievements.includes(ach.id) && ach.check(dailyLogs))
           .map(ach => ach.id);
@@ -96,22 +126,23 @@ export default function Home() {
   }, [dailyLogs, unlockedAchievements, saveData, toast, isLoading]);
 
 
-  const handleGenerate = async (data: GenerateDailyScheduleInput & PersonalizedTipInput) => {
+  const handleGenerate = async (data: DailyInputFormAiValues) => {
     setIsGenerating(true);
-    setLastAiInputs(data);
+    
+    // Ensure isMedicated is boolean, and currentHour is set
+    const fullAiInputs: CombinedAiInputs = {
+      ...data,
+      isMedicated: data.isMedicated === 'yes', // DailyInputForm uses string 'yes'/'no'
+      currentHour: data.currentHour !== undefined ? data.currentHour : new Date().getHours(),
+      hoursBeforeSleep: data.hoursBeforeSleep === undefined || isNaN(data.hoursBeforeSleep) ? undefined : Number(data.hoursBeforeSleep),
+    };
+    setLastAiInputs(fullAiInputs);
+
+
     try {
       const [scheduleResponse, tipResponse] = await Promise.all([
-        generateDailySchedule({
-          energyLevel: data.energyLevel,
-          focusQuality: data.focusQuality,
-          timeOfDay: data.timeOfDay,
-          academicLoad: data.academicLoad,
-        }),
-        generatePersonalizedTip({
-          currentState: data.currentState,
-          timeOfDay: data.timeOfDay,
-          challenges: data.challenges,
-        }),
+        generateDailySchedule(fullAiInputs),
+        generatePersonalizedTip(fullAiInputs),
       ]);
 
       setCurrentSchedule(scheduleResponse);
@@ -125,10 +156,13 @@ export default function Home() {
     setIsGenerating(false);
   };
 
-  const handleLogMetrics = (data: Omit<DailyLog, 'date' | 'generatedSchedule' | 'generatedTip' | 'dailyInputEnergyLevel' | 'dailyInputFocusQuality' | 'dailyInputTimeOfDay' | 'dailyInputAcademicLoad' | 'dailyInputCurrentState' | 'dailyInputChallenges'>) => {
+  const handleLogMetrics = (data: Omit<DailyLog, 'date' | 'generatedSchedule' | 'generatedTip' | 
+    'dailyInputEnergyLevel' | 'dailyInputFocusQuality' | 'dailyInputTimeOfDay' | 'dailyInputAcademicLoad' | 
+    'dailyInputCurrentState' | 'dailyInputChallenges' | 'dailyInputCurrentHour' | 'dailyInputHoursBeforeSleep' |
+    'dailyInputSleepinessLevel' | 'dailyInputIsMedicated'
+  >) => {
     const todayStr = format(new Date(), 'yyyy-MM-dd');
     
-    // Estimate planned hours from schedule string (very basic)
     let plannedHours = 0;
     if (currentSchedule?.schedule) {
         const hourMatches = currentSchedule.schedule.match(/(\d+(\.\d+)?)\s*hour/gi);
@@ -143,13 +177,16 @@ export default function Home() {
       generatedSchedule: currentSchedule,
       generatedTip: currentTip,
       hoursPlanned: plannedHours,
-      // Store the inputs that generated this day's schedule/tip
-      dailyInputEnergyLevel: lastAiInputs?.energyLevel || '',
-      dailyInputFocusQuality: lastAiInputs?.focusQuality || '',
-      dailyInputTimeOfDay: lastAiInputs?.timeOfDay || '',
-      dailyInputAcademicLoad: lastAiInputs?.academicLoad || '',
+      dailyInputEnergyLevel: lastAiInputs?.energyLevel || 'Average',
+      dailyInputFocusQuality: lastAiInputs?.focusQuality || 'Medium',
+      dailyInputTimeOfDay: lastAiInputs?.timeOfDay || 'Morning',
+      dailyInputAcademicLoad: lastAiInputs?.academicLoad || 'Medium',
       dailyInputCurrentState: lastAiInputs?.currentState || '',
       dailyInputChallenges: lastAiInputs?.challenges || '',
+      dailyInputCurrentHour: lastAiInputs?.currentHour !== undefined ? lastAiInputs.currentHour : new Date().getHours(),
+      dailyInputHoursBeforeSleep: lastAiInputs?.hoursBeforeSleep,
+      dailyInputSleepinessLevel: lastAiInputs?.sleepinessLevel || 'Not Sleepy',
+      dailyInputIsMedicated: lastAiInputs?.isMedicated || false,
     };
 
     setDailyLogs(prevLogs => {
@@ -167,10 +204,15 @@ export default function Home() {
   const clearTodayState = () => {
     setCurrentSchedule(undefined);
     setCurrentTip(undefined);
-    // Optionally clear lastAiInputs if you want the form to reset fully
-    // setLastAiInputs(undefined); 
+    // Keep lastAiInputs to prefill the form, user might want to regenerate with slight tweaks
     toast({ title: "Cleared", description: "Today's generated schedule and tip have been cleared." });
   };
+
+  const defaultFormValuesForAi = lastAiInputs ? {
+      ...lastAiInputs,
+      // Ensure isMedicated is in 'yes'/'no' string format for the form's RadioGroup
+      isMedicated: typeof lastAiInputs.isMedicated === 'boolean' ? (lastAiInputs.isMedicated ? 'yes' : 'no') : 'no',
+  } : undefined;
 
 
   if (isLoading) {
@@ -182,10 +224,15 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
       <SiteHeader />
       <main className="flex-grow container mx-auto p-4 md:p-6 lg:p-8 space-y-8">
-        <DailyInputForm onGenerate={handleGenerate} onLogMetrics={handleLogMetrics} isGenerating={isGenerating} defaultValuesAI={lastAiInputs} />
+        <DailyInputForm 
+            onGenerate={handleGenerate} 
+            onLogMetrics={handleLogMetrics} 
+            isGenerating={isGenerating} 
+            defaultValuesAI={defaultFormValuesForAi} 
+        />
         
         {(currentSchedule || currentTip) && (
           <div className="text-right">

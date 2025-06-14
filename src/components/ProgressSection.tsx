@@ -1,8 +1,9 @@
+
 'use client';
 
 import type { DailyLog } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { BarChart, LineChart, PieChartIcon, TrendingUp } from 'lucide-react';
+import { BarChart, LineChart as LineChartIconLucide, PieChartIcon, TrendingUp } from 'lucide-react'; // Renamed to avoid conflict
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
 import { Bar, Line, Pie, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend as RechartsLegend, PieChart as RechartsPieChart, Cell } from 'recharts';
 import { useMemo } from 'react';
@@ -40,8 +41,12 @@ export function ProgressSection({ dailyLogs }: ProgressSectionProps) {
     return Object.entries(summary)
       .map(([name, data]) => ({ name, ...data }))
       .sort((a,b) => {
-        const [aWeek, aYear] = a.name.substring(1).split(" ").map(Number);
-        const [bWeek, bYear] = b.name.substring(1).split(" ").map(Number);
+        const [aWeekStr, aYearStr] = a.name.substring(1).split(" ");
+        const [bWeekStr, bYearStr] = b.name.substring(1).split(" ");
+        const aWeek = parseInt(aWeekStr);
+        const aYear = parseInt(aYearStr);
+        const bWeek = parseInt(bWeekStr);
+        const bYear = parseInt(bYearStr);
         if (aYear !== bYear) return aYear - bYear;
         return aWeek - bWeek;
       })
@@ -57,8 +62,8 @@ export function ProgressSection({ dailyLogs }: ProgressSectionProps) {
         energy: log.energyLevelRating,
         focus: log.focusQualityRating,
       }))
-      .sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()) // Ensure correct order for line chart
-      .slice(-30); // Show last 30 days
+      .sort((a,b) => new Date(a.date + ', ' + new Date().getFullYear()).getTime() - new Date(b.date + ', ' + new Date().getFullYear()).getTime()) 
+      .slice(-30); 
   }, [dailyLogs]);
   
   const academicLoadDistribution = useMemo(() => {
@@ -79,16 +84,16 @@ export function ProgressSection({ dailyLogs }: ProgressSectionProps) {
       <Card>
         <CardHeader>
           <CardTitle className="font-headline flex items-center"><TrendingUp className="mr-2 h-5 w-5 text-primary" />Your Progress</CardTitle>
+           <CardDescription>Start logging your days to see your progress here! The app learns from your patterns to offer better suggestions over time.</CardDescription>
         </CardHeader>
         <CardContent className="text-center">
           <TrendingUp className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
-          <p className="text-muted-foreground">Start logging your days to see your progress here!</p>
+          <p className="text-muted-foreground">No data yet. Complete your daily inputs and log metrics to unlock insights!</p>
         </CardContent>
       </Card>
     );
   }
   
-  // Helper function to get week number
   function getWeekNumber(d: Date) {
     d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
@@ -100,7 +105,7 @@ export function ProgressSection({ dailyLogs }: ProgressSectionProps) {
     <Card>
       <CardHeader>
         <CardTitle className="font-headline flex items-center"><TrendingUp className="mr-2 h-5 w-5 text-primary" />Your Progress</CardTitle>
-        <CardDescription>Visualize your study habits and well-being over time.</CardDescription>
+        <CardDescription>Visualize your study habits and well-being. The more you log, the better the AI can tailor its advice to your unique needs and patterns!</CardDescription>
       </CardHeader>
       <CardContent className="space-y-8">
         <div>
@@ -123,15 +128,15 @@ export function ProgressSection({ dailyLogs }: ProgressSectionProps) {
         </div>
 
         <div>
-          <h3 className="text-lg font-semibold mb-2 flex items-center"><LineChart className="mr-2 h-5 w-5 text-accent" />Daily Performance (Last 30 Days)</h3>
+          <h3 className="text-lg font-semibold mb-2 flex items-center"><LineChartIconLucide className="mr-2 h-5 w-5 text-accent" />Daily Performance (Last 30 Days)</h3>
            {dailyPerformance.length > 0 ? (
             <ChartContainer config={chartConfigRatings} className="h-[250px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <RechartsLineChart data={dailyPerformance} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false}/>
                   <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
-                  <YAxis yAxisId="left" orientation="left" stroke="var(--color-energy)" tickLine={false} axisLine={false} tickMargin={8} />
-                  <YAxis yAxisId="right" orientation="right" stroke="var(--color-focus)" tickLine={false} axisLine={false} tickMargin={8} />
+                  <YAxis yAxisId="left" orientation="left" stroke="var(--color-energy)" tickLine={false} axisLine={false} tickMargin={8} domain={[0, 10]} />
+                  <YAxis yAxisId="right" orientation="right" stroke="var(--color-focus)" tickLine={false} axisLine={false} tickMargin={8} domain={[0, 10]} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <ChartLegend content={<ChartLegendContent />} />
                   <Line yAxisId="left" type="monotone" dataKey="energy" stroke="var(--color-energy)" strokeWidth={2} dot={false} />
@@ -178,8 +183,6 @@ export function ProgressSection({ dailyLogs }: ProgressSectionProps) {
   );
 }
 
-// Use Recharts components directly since Shadcn Chart components are wrappers
+// Use Recharts components directly
 const RechartsBarChart = Bar; 
 const RechartsLineChart = Line;
-
-

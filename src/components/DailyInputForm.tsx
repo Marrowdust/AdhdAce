@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,26 +23,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, Zap, Brain, CalendarDays, BookOpen, AlertTriangle, Info, Edit3 } from 'lucide-react';
+import { Loader2, Zap, Brain, CalendarDays, BookOpen, AlertTriangle, Info, Edit3, Clock, Moon, Pill } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 const aiInputSchema = z.object({
   energyLevel: z.string().min(1, "Energy level is required."),
   focusQuality: z.string().min(1, "Focus quality is required."),
-  timeOfDay: z.string().min(1, "Time of day is required."),
+  timeOfDay: z.string().min(1, "Time of day is required."), // Retained for broader context
   academicLoad: z.string().min(1, "Academic load is required."),
   currentState: z.string().min(1, "Current state is required.").max(100, "Max 100 chars"),
   challenges: z.string().min(1, "Challenges are required.").max(100, "Max 100 chars"),
+  currentHour: z.number().min(0).max(23),
+  hoursBeforeSleep: z.coerce.number().min(0).max(24).optional(),
+  sleepinessLevel: z.string().min(1, "Sleepiness level is required."),
+  isMedicated: z.enum(['yes', 'no'], { required_error: "Medication status is required." }),
 });
 
 const metricsLogSchema = z.object({
   hoursCompleted: z.coerce.number().min(0, "Hours must be positive.").max(24),
   energyLevelRating: z.coerce.number().min(1).max(10),
   focusQualityRating: z.coerce.number().min(1).max(10),
-  notes: z.string().max(500, "Max 500 chars").optional().default(""),
+  notes: z.string().max(500, "Max 500 characters").optional().default(""),
 });
 
-type AiInputFormValues = z.infer<typeof aiInputSchema>;
+export type AiInputFormValues = z.infer<typeof aiInputSchema>;
 type MetricsLogFormValues = z.infer<typeof metricsLogSchema>;
 
 interface DailyInputFormProps {
@@ -52,17 +59,39 @@ interface DailyInputFormProps {
 }
 
 export function DailyInputForm({ onGenerate, onLogMetrics, isGenerating, defaultValuesAI }: DailyInputFormProps) {
+  const [dynamicCurrentHour, setDynamicCurrentHour] = useState(new Date().getHours());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setDynamicCurrentHour(new Date().getHours());
+    }, 60000); // Update every minute
+    return () => clearInterval(timer);
+  }, []);
+
   const aiForm = useForm<AiInputFormValues>({
     resolver: zodResolver(aiInputSchema),
-    defaultValues: defaultValuesAI || {
+    defaultValues: {
       energyLevel: 'Average',
       focusQuality: 'Medium',
-      timeOfDay: 'Morning',
+      timeOfDay: getTimeOfDay(dynamicCurrentHour),
       academicLoad: 'Medium',
       currentState: '',
       challenges: '',
+      currentHour: dynamicCurrentHour,
+      hoursBeforeSleep: undefined,
+      sleepinessLevel: 'Not Sleepy',
+      isMedicated: 'no',
+      ...defaultValuesAI, // Apply loaded defaults, potentially overriding above
+      currentHour: defaultValuesAI?.currentHour !== undefined ? defaultValuesAI.currentHour : dynamicCurrentHour, // Ensure currentHour is dynamic or from loaded
+      timeOfDay: defaultValuesAI?.timeOfDay || getTimeOfDay(defaultValuesAI?.currentHour !== undefined ? defaultValuesAI.currentHour : dynamicCurrentHour),
     },
   });
+
+ useEffect(() => {
+    aiForm.setValue('currentHour', dynamicCurrentHour);
+    aiForm.setValue('timeOfDay', getTimeOfDay(dynamicCurrentHour));
+  }, [dynamicCurrentHour, aiForm]);
+
 
   const metricsForm = useForm<MetricsLogFormValues>({
     resolver: zodResolver(metricsLogSchema),
@@ -73,23 +102,41 @@ export function DailyInputForm({ onGenerate, onLogMetrics, isGenerating, default
       notes: '',
     },
   });
+  
+  function getTimeOfDay(hour: number) {
+    if (hour >= 5 && hour < 12) return 'Morning';
+    if (hour >= 12 && hour < 18) return 'Afternoon';
+    return 'Evening';
+  }
 
   const energyLevels = [{value: "Good", label: "Good", icon: <Zap className="w-4 h-4 text-green-500" />}, {value: "Average", label: "Average", icon: <Zap className="w-4 h-4 text-yellow-500" />}, {value: "Bad", label: "Bad", icon: <Zap className="w-4 h-4 text-red-500" />}, {value: "Crisis", label: "Crisis", icon: <Zap className="w-4 h-4 text-red-700" />}];
   const focusQualities = [{value: "High", label: "High", icon: <Brain className="w-4 h-4 text-green-500" />}, {value: "Medium", label: "Medium", icon: <Brain className="w-4 h-4 text-yellow-500" />}, {value: "Low", label: "Low", icon: <Brain className="w-4 h-4 text-red-500" />}];
-  const timesOfDay = [{value: "Morning", label: "Morning", icon: <CalendarDays className="w-4 h-4 text-blue-500" />}, {value: "Afternoon", label: "Afternoon", icon: <CalendarDays className="w-4 h-4 text-orange-500" />}, {value: "Evening", label: "Evening", icon: <CalendarDays className="w-4 h-4 text-purple-500" />}];
   const academicLoads = [{value: "High", label: "High", icon: <BookOpen className="w-4 h-4 text-red-500" />}, {value: "Medium", label: "Medium", icon: <BookOpen className="w-4 h-4 text-yellow-500" />}, {value: "Low", label: "Low", icon: <BookOpen className="w-4 h-4 text-green-500" />}];
+  const sleepinessLevels = ["Not Sleepy", "Slightly Sleepy", "Moderately Sleepy", "Very Sleepy"];
+
+  const onSubmitAiForm = (data: AiInputFormValues) => {
+    const dataToSubmit = {
+      ...data,
+      isMedicated: data.isMedicated === 'yes', // Convert to boolean
+    };
+    onGenerate(dataToSubmit);
+  };
+
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="font-headline flex items-center"><Info className="mr-2 h-5 w-5 text-primary" />Plan Your Day</CardTitle>
-          <CardDescription>Tell us how you're feeling to get a personalized schedule and tips.</CardDescription>
+          <CardDescription>
+            Tell us how you're feeling to get a personalized schedule and tips. 
+            The current time is {String(dynamicCurrentHour).padStart(2, '0')}:00. This app learns from your inputs and logged metrics to provide increasingly tailored advice over time!
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...aiForm}>
-            <form onSubmit={aiForm.handleSubmit(onGenerate)} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={aiForm.handleSubmit(onSubmitAiForm)} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <FormField
                   control={aiForm.control}
                   name="energyLevel"
@@ -130,27 +177,7 @@ export function DailyInputForm({ onGenerate, onLogMetrics, isGenerating, default
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={aiForm.control}
-                  name="timeOfDay"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center"><CalendarDays className="mr-1 h-4 w-4" />Time of Day</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger><SelectValue placeholder="Select time of day" /></SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {timesOfDay.map(time => (
-                             <SelectItem key={time.value} value={time.value}><span className="flex items-center">{time.icon}{time.label}</span></SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
+                 <FormField
                   control={aiForm.control}
                   name="academicLoad"
                   render={({ field }) => (
@@ -170,8 +197,71 @@ export function DailyInputForm({ onGenerate, onLogMetrics, isGenerating, default
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={aiForm.control}
+                  name="hoursBeforeSleep"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center"><Moon className="mr-1 h-4 w-4" />Hours Before Sleep (Optional)</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="e.g., 3" {...field} onChange={event => field.onChange(event.target.value === '' ? undefined : +event.target.value)} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={aiForm.control}
+                  name="sleepinessLevel"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center"><Clock className="mr-1 h-4 w-4" />Sleepiness Level</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger><SelectValue placeholder="Select sleepiness level" /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {sleepinessLevels.map(level => (
+                            <SelectItem key={level} value={level}>{level}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={aiForm.control}
+                  name="isMedicated"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormLabel className="flex items-center"><Pill className="mr-1 h-4 w-4" />Are you currently medicated?</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="flex space-x-3"
+                        >
+                          <FormItem className="flex items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="yes" />
+                            </FormControl>
+                            <FormLabel className="font-normal">Yes</FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="no" />
+                            </FormControl>
+                            <FormLabel className="font-normal">No</FormLabel>
+                          </FormItem>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
-              <FormField
+               <FormField
                 control={aiForm.control}
                 name="currentState"
                 render={({ field }) => (
@@ -209,7 +299,7 @@ export function DailyInputForm({ onGenerate, onLogMetrics, isGenerating, default
       <Card>
         <CardHeader>
           <CardTitle className="font-headline flex items-center"><Edit3 className="mr-2 h-5 w-5 text-primary" />Log Your Day's Metrics</CardTitle>
-          <CardDescription>Track your progress and help the AI learn.</CardDescription>
+          <CardDescription>Track your progress to help the AI learn and refine its suggestions for you. The more you log, the smarter it gets!</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...metricsForm}>
@@ -260,9 +350,9 @@ export function DailyInputForm({ onGenerate, onLogMetrics, isGenerating, default
                 name="notes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Notes (What worked/didn't work?)</FormLabel>
+                    <FormLabel>Notes (What worked/didn't work? How did you feel about the schedule?)</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="e.g., Morning block was great, struggled with afternoon focus..." {...field} />
+                      <Textarea placeholder="e.g., Morning block was great, struggled with afternoon focus. The 25-min tasks felt right." {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

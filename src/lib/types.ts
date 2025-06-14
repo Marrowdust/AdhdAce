@@ -1,3 +1,4 @@
+
 import type { GenerateDailyScheduleOutput } from '@/ai/flows/daily-schedule-generator';
 import type { PersonalizedTipOutput } from '@/ai/flows/personalized-tips-generator';
 
@@ -10,12 +11,17 @@ export interface DailyLog {
   notes?: string; 
   generatedSchedule?: GenerateDailyScheduleOutput;
   generatedTip?: PersonalizedTipOutput;
+  // AI Inputs logged for the day
   dailyInputEnergyLevel: string;
   dailyInputFocusQuality: string;
   dailyInputTimeOfDay: string;
   dailyInputAcademicLoad: string;
   dailyInputCurrentState: string;
   dailyInputChallenges: string;
+  dailyInputCurrentHour: number;
+  dailyInputHoursBeforeSleep?: number;
+  dailyInputSleepinessLevel: string;
+  dailyInputIsMedicated: boolean;
 }
 
 export interface Achievement {
