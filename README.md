@@ -1,96 +1,145 @@
 # ADHD Ace - Your Personal AI Productivity Assistant
 
-This is a Next.js and Genkit application designed to help students, especially those with ADHD, manage their daily tasks, energy, and focus. It provides personalized schedules and tips powered by AI.
+ADHD Ace is a Next.js and Genkit-powered productivity assistant designed to help students—especially those with ADHD—manage their daily tasks, energy, and focus. It uses AI to generate personalized schedules and tips to support your mental flow.
 
-## Getting Started
+---
 
-Follow these steps to set up and run the project locally:
+## 🚀 Easy Installation (Recommended for Linux)
 
-### Prerequisites
+If you're on **Arch Linux** or a similar distribution, you can install and run ADHD Ace with one command:
 
-*   Node.js (version 18 or later recommended)
-*   npm (usually comes with Node.js)
-*   A Google AI API Key (from Google AI Studio or Google Cloud Console)
+```bash
+bash <(curl -s https://raw.githubusercontent.com/Marrowdust/AdhdAce/main/install-adhdace.sh)
+This script will:
 
-### Setup
+Clone the repo
 
-1.  **Clone the repository:**
-    ```bash
-    git clone <your-repository-url>
-    cd <repository-directory>
-    ```
+Prompt you for your Gemini API Key
 
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
+Install dependencies
 
-3.  **Set up environment variables:**
-    *   Create a new file named `.env` in the root of your project. You can copy the example file:
-        ```bash
-        cp .env.example .env
-        ```
-    *   Open the `.env` file and add your Google AI API Key:
-        ```
-        GOOGLE_API_KEY="YOUR_GOOGLE_AI_API_KEY_HERE"
-        ```
-        Replace `"YOUR_GOOGLE_AI_API_KEY_HERE"` with your actual API key.
+Set up a .env file
 
-### Running the Application
+Create a launcher in your app menu
 
-You'll need to run two processes concurrently: the Next.js frontend and the Genkit development server for AI functionalities.
+⚠️ Currently, the installer is tested and optimized for Arch Linux. Other distributions may work but are not officially supported yet.
 
-1.  **Start the Genkit development server:**
-    Open a terminal and run:
-    ```bash
-    npm run genkit:dev
-    ```
-    This will start the Genkit AI flows. Keep this terminal running.
+🛠️ Manual Setup (Optional)
+If you'd rather set things up yourself or you're on a non-Linux OS:
 
-2.  **Start the Next.js development server:**
-    Open another terminal and run:
-    ```bash
-    npm run dev
-    ```
-    This will start the Next.js application, typically on `http://localhost:9002` (or another port if 9002 is busy).
+Prerequisites
+Node.js (version 18 or later recommended)
 
-3.  **Open the app:**
-    Open your web browser and navigate to the address shown by the `npm run dev` command (e.g., `http://localhost:9002`).
+npm (usually comes with Node.js)
 
-## Features
+A Google AI API Key (from Google AI Studio or Google Cloud Console)
 
-*   **Dynamic Daily Input:** Tell the app about your current energy, focus, academic load, and more.
-*   **AI-Powered Schedule Generation:** Get a personalized daily schedule broken into manageable tasks.
-*   **Personalized Tips:** Receive actionable tips based on your current situation and ADHD management principles.
-*   **Progress Tracking:** Log your completed tasks and rate your day to visualize your progress over time.
-*   **Achievements:** Unlock achievements for consistency and milestones.
-*   **Light/Dark Mode:** Choose your preferred theme.
-*   **Local Persistence:** Your daily logs, inputs, and achievements are saved in your browser's local storage.
-*   **Adaptive Learning (Conceptual):** The AI is prompted to consider past patterns (though deep historical analysis is a future enhancement). The more you use the app and log your metrics, the more tailored its advice aims to become.
+Setup
+Clone the repository:
 
-## Project Structure
+bash
+Copy
+Edit
+git clone https://github.com/Marrowdust/AdhdAce.git
+cd AdhdAce
+Install dependencies:
 
-*   `src/app/`: Next.js App Router pages and layouts.
-*   `src/components/`: React components, including UI elements from ShadCN.
-*   `src/ai/`: Genkit related files.
-    *   `src/ai/flows/`: Genkit flow definitions (e.g., `daily-schedule-generator.ts`).
-    *   `src/ai/genkit.ts`: Genkit initialization.
-*   `src/lib/`: Utility functions and type definitions.
-*   `src/hooks/`: Custom React hooks (e.g., `useTheme`, `useToast`).
-*   `src/config/`: Application configurations (e.g., `achievements.ts`).
-*   `public/`: Static assets.
+bash
+Copy
+Edit
+npm install
+Set up environment variables:
 
-## Tech Stack
+Create a new file named .env in the root of the project and add your Gemini API key:
 
-*   Next.js (React framework)
-*   TypeScript
-*   Tailwind CSS
-*   ShadCN UI (for UI components)
-*   Genkit (for AI functionalities with Google AI)
-*   Zod (for schema validation)
-*   React Hook Form (for form handling)
-*   Recharts (for charts)
+env
+Copy
+Edit
+GOOGLE_API_KEY="YOUR_GOOGLE_AI_API_KEY_HERE"
+🧠 Running the Application (Manual)
+Run both the backend (Genkit) and frontend (Next.js) in two separate terminals:
 
-## Contributing
+Start Genkit:
 
-This project is currently set up for individual use. If you plan to collaborate, ensure your Git and GitHub setup allows for shared repository access.
+bash
+Copy
+Edit
+npm run genkit:dev
+Start Next.js:
+
+bash
+Copy
+Edit
+npm run dev
+Visit the app:
+
+Go to the address shown (usually http://localhost:9002).
+
+✨ Features
+Dynamic Daily Input: Enter your current energy, focus, and workload.
+
+AI-Powered Schedule Generation: Get a daily plan broken into manageable tasks.
+
+Personalized Tips: Receive advice tailored to your ADHD profile.
+
+Progress Tracking: Log and visualize your productivity over time.
+
+Achievements: Unlock consistency-based milestones.
+
+Light/Dark Mode: Choose your visual preference.
+
+Local Persistence: Saves your data in your browser storage.
+
+Adaptive Learning (Conceptual): Over time, the AI gives smarter suggestions based on your logs.
+
+🗂 Project Structure
+src/app/: App pages and layouts
+
+src/components/: UI components (ShadCN)
+
+src/ai/: Genkit flows and AI integration
+
+src/ai/flows/: AI logic and tasks
+
+src/lib/: Utility functions and types
+
+src/hooks/: Custom hooks
+
+src/config/: App configs (e.g., achievements)
+
+public/: Static assets (icons, etc.)
+
+🧰 Tech Stack
+Next.js (React framework)
+
+TypeScript
+
+Tailwind CSS
+
+ShadCN UI
+
+Genkit (Google AI)
+
+Zod (Validation)
+
+React Hook Form
+
+Recharts
+
+🤝 Contributing
+This project is currently built for individual use, but contributions are welcome. If you'd like to collaborate, fork the repo and set up proper GitHub access to work on shared branches.
+
+🔒 Privacy Note
+Your API key is stored locally and never sent anywhere except to Google’s Gemini API via Genkit, strictly for generating your schedules.
+
+yaml
+Copy
+Edit
+
+---
+
+Let me know if you’d like:
+- A macOS or Windows section
+- Installer link shown higher
+- GIF/video demo badge
+- A note for future `.deb` packages
