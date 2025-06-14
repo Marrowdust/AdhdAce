@@ -1,122 +1,168 @@
-ADHD Ace - Your Personal AI Productivity Assistant
-ADHD Ace is a Next.js and Genkit-powered productivity assistant designed to help students—especially those with ADHD—manage their daily tasks, energy, and focus. It uses AI to generate personalized schedules and tips to support your mental flow.
+# 🧠 ADHD Ace
+### Your Personal AI Productivity Assistant
 
-🚀 Easy Installation (Recommended for Linux)
-If you're on Arch Linux or a similar distribution, you can install and run ADHD Ace with one command:
+> **Designed specifically for students with ADHD** — harness the power of AI to transform your daily productivity and focus management.
 
+ADHD Ace is a cutting-edge Next.js and Genkit-powered productivity companion that understands your unique mental flow patterns. By leveraging advanced AI technology, it creates personalized schedules and actionable insights tailored to your ADHD brain.
+
+---
+
+## 🚀 Quick Start Installation
+### One-Command Setup (Linux Recommended)
+
+Perfect for **Arch Linux** users — get up and running instantly:
+
+```bash
 bash <(curl -s https://raw.githubusercontent.com/Marrowdust/AdhdAce/main/install-adhdace.sh)
+```
 
-This script will:
+**What this magical script does:**
+- 📦 Clones the repository automatically
+- 🔑 Prompts for your Gemini API Key (from Google AI Studio)
+- ⚙️ Installs all dependencies seamlessly  
+- 📝 Sets up your `.env` configuration
+- 🎯 Creates a beautiful launcher with app menu integration
 
-Clone the repo
+> **Note:** Optimized and tested for Arch Linux. Other distributions may work but aren't officially supported yet.
 
-Prompt you for your Gemini API Key (from Google AI Studio)
+---
 
-Install dependencies
+## 🛠️ Manual Setup
+### For Non-Arch Systems or Custom Control
 
-Set up a .env file
+### Prerequisites
+- **Node.js** (v18 or later) 
+- **npm** (bundled with Node.js)
+- **Google AI API Key** (from Google AI Studio)
 
-Create a launcher in your app menu with an icon
+### Step-by-Step Installation
 
-Note: Currently, the installer is tested and optimized for Arch Linux. Other distributions may work but are not officially supported yet.
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Marrowdust/AdhdAce.git
+   cd AdhdAce
+   ```
 
-🛠️ Manual Setup (Optional)
-If you're on a non-Arch distro or prefer manual control:
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-Prerequisites
-Node.js (v18 or later)
+3. **Configure environment variables**
+   
+   Create a `.env` file in the root directory:
+   ```env
+   GOOGLE_API_KEY="YOUR_GOOGLE_AI_API_KEY_HERE"
+   ```
+   
+   Replace `YOUR_GOOGLE_AI_API_KEY_HERE` with your actual Gemini API key.
 
-npm (comes with Node.js)
+---
 
-A Google AI API Key
+## 🚀 Running ADHD Ace
 
-Setup
-Clone the repository:
+You'll need **two terminal windows** for the full experience:
 
-git clone https://github.com/Marrowdust/AdhdAce.git
-cd AdhdAce
-
-Install dependencies:
-
-npm install
-
-Set up environment variables:
-
-Create a new file called .env in the root directory with the following content:
-
-GOOGLE_API_KEY="YOUR_GOOGLE_AI_API_KEY_HERE"
-
-Replace YOUR_GOOGLE_AI_API_KEY_HERE with your actual Gemini API key.
-
-🧠 Running the Application
-You need to start two services:
-
-Start Genkit (AI logic server):
-
+### Terminal 1: AI Engine
+```bash
 npm run genkit:dev
+```
 
-In another terminal, start the Next.js frontend:
-
+### Terminal 2: Frontend Interface  
+```bash
 npm run dev
+```
 
-Then open your browser at the address shown (typically http://localhost:9002).
+🌐 **Access your app:** Open your browser to the displayed address (typically `http://localhost:9002`)
 
-✨ Features
-Dynamic Daily Input: Log your current focus, energy, and workload.
+---
 
-AI-Powered Schedule: Get a custom daily plan based on your mental state.
+## ✨ Powerful Features
 
-Personalized Tips: Get smart advice based on ADHD science.
+### 🎯 **Dynamic Daily Input**
+Log your current focus levels, energy states, and workload in real-time
 
-Progress Tracking: Visual logs of your completed days and tasks.
+### 🤖 **AI-Powered Scheduling**
+Receive intelligent, personalized daily plans that adapt to your mental state
 
-Achievements: Earn motivational badges for consistency.
+### 💡 **Science-Backed Tips**
+Get evidence-based advice rooted in ADHD research and cognitive science
 
-Light/Dark Mode: Toggle themes as you wish.
+### 📊 **Progress Tracking**
+Beautiful visual logs showcasing your completed days and accomplished tasks
 
-Local Persistence: All data stays in your browser storage.
+### 🏆 **Achievement System**
+Earn motivational badges that celebrate consistency and progress
 
-Adaptive Learning: Over time, the app becomes more personalized.
+### 🌓 **Adaptive Themes**
+Switch between light and dark modes to match your preferences
 
-🗂 Project Structure
-src/app/: App pages and layout (Next.js)
+### 🔒 **Local Data Storage**
+Your personal information stays secure in your browser—no cloud dependency
 
-src/components/: Reusable UI components (ShadCN)
+### 🧠 **Adaptive Learning**
+The app evolves with you, becoming more personalized over time
 
-src/ai/: Genkit AI integration
+---
 
-flows/: Definitions for AI routines
+## 🗂️ Project Architecture
 
-genkit.ts: AI engine setup
+```
+src/
+├── app/           # Next.js pages and layouts
+├── components/    # Reusable UI components (ShadCN)
+├── ai/           # Genkit AI integration
+│   ├── flows/    # AI routine definitions
+│   └── genkit.ts # AI engine configuration
+├── lib/          # Utility functions and TypeScript types
+├── hooks/        # Custom React hooks
+└── config/       # Static configurations (achievements, etc.)
 
-src/lib/: Utility functions and types
+public/           # Static assets (images, icons, manifests)
+```
 
-src/hooks/: Custom React hooks
+---
 
-src/config/: Static configs like achievements
+## 🧰 Technology Stack
 
-public/: Static files (images, icons, etc.)
+| Category | Technology | Purpose |
+|----------|------------|---------|
+| **Framework** | Next.js (React) | Modern web application foundation |
+| **Language** | TypeScript | Type-safe development |
+| **Styling** | Tailwind CSS | Utility-first CSS framework |
+| **UI Components** | ShadCN UI | Beautiful, accessible components |
+| **AI Engine** | Genkit (Google AI) | Intelligent task management |
+| **Validation** | Zod | Schema validation |
+| **Forms** | React Hook Form | Efficient form handling |
+| **Charts** | Recharts | Data visualization |
 
-🧰 Tech Stack
-Next.js (React)
+---
 
-TypeScript
+## 🤝 Contributing
 
-Tailwind CSS
+ADHD Ace is currently optimized for individual use. If you're interested in contributing or forking for team collaboration, please ensure your Git/GitHub setup supports:
 
-ShadCN UI
+- Shared branch workflows
+- Pull request processes  
+- Collaborative development practices
 
-Genkit (Google AI)
+---
 
-Zod (validation)
+## 🔒 Privacy & Security
 
-React Hook Form
+**Your data, your control:**
+- 🔑 API keys stored exclusively in your local `.env` file
+- 🚫 No data sharing or uploading to external servers
+- 🔗 Direct, secure communication with Google's Gemini API only
+- 💾 All personal data remains in your browser's local storage
 
-Recharts (visual charts)
+---
 
-🤝 Contributing
-ADHD Ace is currently designed for solo users. If you'd like to contribute or fork it for a team, ensure your Git/GitHub setup supports shared branches and PR workflows.
+## 📞 Support & Resources
 
-🔒 Privacy Note
-Your API key is stored only in your local .env file. It is never shared or uploaded—only used for direct communication with Google's Gemini API.
+- **Repository:** [GitHub - ADHD Ace](https://github.com/Marrowdust/AdhdAce)
+- **API Setup:** [Google AI Studio](https://aistudio.google.com)
 
+---
+
+*Built with ❤️ for the ADHD community*
