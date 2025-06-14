@@ -17,9 +17,8 @@ import { achievements as achievementConfig } from '@/config/achievements';
 import { format } from 'date-fns';
 import { Loader2, RefreshCw } from 'lucide-react';
 
-const LOCAL_STORAGE_KEY = 'adhdAceDataV2'; // Incremented version for new data structure
+const LOCAL_STORAGE_KEY = 'adhdAceDataV2';
 
-// Combine AI input types for easier state management
 type CombinedAiInputs = GenerateDailyScheduleInput & PersonalizedTipInput;
 
 export default function Home() {
@@ -38,6 +37,9 @@ export default function Home() {
     setIsLoading(true);
     try {
       const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+      const currentHour = new Date().getHours();
+      const dynamicTimeOfDay = currentHour >= 5 && currentHour < 12 ? 'Morning' : currentHour >= 12 && currentHour < 18 ? 'Afternoon' : 'Evening';
+
       if (storedData) {
         const parsedData: AppData = JSON.parse(storedData);
         setDailyLogs(parsedData.dailyLogs || []);
@@ -50,11 +52,11 @@ export default function Home() {
             setLastAiInputs({
                 energyLevel: todayLog.dailyInputEnergyLevel,
                 focusQuality: todayLog.dailyInputFocusQuality,
-                timeOfDay: todayLog.dailyInputTimeOfDay,
+                timeOfDay: todayLog.dailyInputTimeOfDay, // Use logged timeOfDay for today
                 academicLoad: todayLog.dailyInputAcademicLoad,
                 currentState: todayLog.dailyInputCurrentState,
                 challenges: todayLog.dailyInputChallenges,
-                currentHour: todayLog.dailyInputCurrentHour,
+                currentHour: todayLog.dailyInputCurrentHour, // Use logged currentHour for today
                 hoursBeforeSleep: todayLog.dailyInputHoursBeforeSleep,
                 sleepinessLevel: todayLog.dailyInputSleepinessLevel,
                 isMedicated: todayLog.dailyInputIsMedicated,
@@ -62,22 +64,27 @@ export default function Home() {
             if (todayLog.generatedSchedule) setCurrentSchedule(todayLog.generatedSchedule);
             if (todayLog.generatedTip) setCurrentTip(todayLog.generatedTip);
         } else {
-            // Set defaults if no log for today, especially for new fields
-            const currentHour = new Date().getHours();
+            // No log for today: initialize with dynamic time and carry over other relevant previous inputs
             setLastAiInputs(prev => ({
-                ...prev,
+                // Carry over user's typical settings if available from 'prev' (which could be from a previous session's lastAiInputs)
+                energyLevel: prev?.energyLevel || 'Average',
+                focusQuality: prev?.focusQuality || 'Medium',
+                academicLoad: prev?.academicLoad || 'Medium',
+                currentState: prev?.currentState || '',
+                challenges: prev?.challenges || '',
+                // Always use fresh dynamic time for a new day's planning
                 currentHour: currentHour,
-                timeOfDay: prev?.timeOfDay || (currentHour >= 5 && currentHour < 12 ? 'Morning' : currentHour >= 12 && currentHour < 18 ? 'Afternoon' : 'Evening'),
+                timeOfDay: dynamicTimeOfDay,
+                hoursBeforeSleep: prev?.hoursBeforeSleep, // User might have a typical value
                 sleepinessLevel: prev?.sleepinessLevel || 'Not Sleepy',
-                isMedicated: prev?.isMedicated === undefined ? false : prev.isMedicated, // Default to false if undefined
+                isMedicated: prev?.isMedicated === undefined ? false : prev.isMedicated,
             }));
         }
       } else {
-        // Initialize with dynamic defaults if no stored data at all
-        const currentHour = new Date().getHours();
+        // No stored data at all (first run or cleared storage)
         setLastAiInputs({
             currentHour: currentHour,
-            timeOfDay: currentHour >= 5 && currentHour < 12 ? 'Morning' : currentHour >= 12 && currentHour < 18 ? 'Afternoon' : 'Evening',
+            timeOfDay: dynamicTimeOfDay,
             energyLevel: 'Average',
             focusQuality: 'Medium',
             academicLoad: 'Medium',
@@ -85,6 +92,7 @@ export default function Home() {
             isMedicated: false,
             currentState: '',
             challenges: '',
+            hoursBeforeSleep: undefined,
         });
       }
     } catch (error) {
@@ -129,10 +137,9 @@ export default function Home() {
   const handleGenerate = async (data: DailyInputFormAiValues) => {
     setIsGenerating(true);
     
-    // Ensure isMedicated is boolean, and currentHour is set
     const fullAiInputs: CombinedAiInputs = {
       ...data,
-      isMedicated: data.isMedicated === 'yes', // DailyInputForm uses string 'yes'/'no'
+      isMedicated: data.isMedicated === 'yes',
       currentHour: data.currentHour !== undefined ? data.currentHour : new Date().getHours(),
       hoursBeforeSleep: data.hoursBeforeSleep === undefined || isNaN(data.hoursBeforeSleep) ? undefined : Number(data.hoursBeforeSleep),
     };
@@ -179,7 +186,7 @@ export default function Home() {
       hoursPlanned: plannedHours,
       dailyInputEnergyLevel: lastAiInputs?.energyLevel || 'Average',
       dailyInputFocusQuality: lastAiInputs?.focusQuality || 'Medium',
-      dailyInputTimeOfDay: lastAiInputs?.timeOfDay || 'Morning',
+      dailyInputTimeOfDay: lastAiInputs?.timeOfDay || (new Date().getHours() >= 5 && new Date().getHours() < 12 ? 'Morning' : new Date().getHours() >= 12 && new Date().getHours() < 18 ? 'Afternoon' : 'Evening'),
       dailyInputAcademicLoad: lastAiInputs?.academicLoad || 'Medium',
       dailyInputCurrentState: lastAiInputs?.currentState || '',
       dailyInputChallenges: lastAiInputs?.challenges || '',
@@ -204,13 +211,11 @@ export default function Home() {
   const clearTodayState = () => {
     setCurrentSchedule(undefined);
     setCurrentTip(undefined);
-    // Keep lastAiInputs to prefill the form, user might want to regenerate with slight tweaks
     toast({ title: "Cleared", description: "Today's generated schedule and tip have been cleared." });
   };
 
   const defaultFormValuesForAi = lastAiInputs ? {
       ...lastAiInputs,
-      // Ensure isMedicated is in 'yes'/'no' string format for the form's RadioGroup
       isMedicated: typeof lastAiInputs.isMedicated === 'boolean' ? (lastAiInputs.isMedicated ? 'yes' : 'no') : 'no',
   } : undefined;
 

@@ -31,7 +31,7 @@ import { useEffect, useState } from 'react';
 const aiInputSchema = z.object({
   energyLevel: z.string().min(1, "Energy level is required."),
   focusQuality: z.string().min(1, "Focus quality is required."),
-  timeOfDay: z.string().min(1, "Time of day is required."), // Retained for broader context
+  timeOfDay: z.string().min(1, "Time of day is required."), 
   academicLoad: z.string().min(1, "Academic load is required."),
   currentState: z.string().min(1, "Current state is required.").max(100, "Max 100 chars"),
   challenges: z.string().min(1, "Challenges are required.").max(100, "Max 100 chars"),
@@ -81,16 +81,20 @@ export function DailyInputForm({ onGenerate, onLogMetrics, isGenerating, default
       hoursBeforeSleep: undefined,
       sleepinessLevel: 'Not Sleepy',
       isMedicated: 'no',
-      ...defaultValuesAI, // Apply loaded defaults, potentially overriding above
-      currentHour: defaultValuesAI?.currentHour !== undefined ? defaultValuesAI.currentHour : dynamicCurrentHour, // Ensure currentHour is dynamic or from loaded
+      ...defaultValuesAI, 
+      currentHour: defaultValuesAI?.currentHour !== undefined ? defaultValuesAI.currentHour : dynamicCurrentHour, 
       timeOfDay: defaultValuesAI?.timeOfDay || getTimeOfDay(defaultValuesAI?.currentHour !== undefined ? defaultValuesAI.currentHour : dynamicCurrentHour),
     },
   });
 
  useEffect(() => {
-    aiForm.setValue('currentHour', dynamicCurrentHour);
-    aiForm.setValue('timeOfDay', getTimeOfDay(dynamicCurrentHour));
-  }, [dynamicCurrentHour, aiForm]);
+    // This effect ensures that 'currentHour' and 'timeOfDay' in the form
+    // are always in sync with the live `dynamicCurrentHour`.
+    const liveHour = new Date().getHours(); // Get the absolute current hour
+    setDynamicCurrentHour(liveHour); // Update state for display elsewhere if needed
+    aiForm.setValue('currentHour', liveHour);
+    aiForm.setValue('timeOfDay', getTimeOfDay(liveHour));
+  }, [dynamicCurrentHour, aiForm]); // Re-run if dynamicCurrentHour changes (e.g. due to interval) or aiForm instance changes (shouldn't often)
 
 
   const metricsForm = useForm<MetricsLogFormValues>({
@@ -104,9 +108,9 @@ export function DailyInputForm({ onGenerate, onLogMetrics, isGenerating, default
   });
   
   function getTimeOfDay(hour: number) {
-    if (hour >= 5 && hour < 12) return 'Morning';
-    if (hour >= 12 && hour < 18) return 'Afternoon';
-    return 'Evening';
+    if (hour >= 5 && hour < 12) return 'Morning'; // 5 AM to 11:59 AM
+    if (hour >= 12 && hour < 18) return 'Afternoon'; // 12 PM to 5:59 PM
+    return 'Evening'; // 6 PM to 4:59 AM (covers overnight)
   }
 
   const energyLevels = [{value: "Good", label: "Good", icon: <Zap className="w-4 h-4 text-green-500" />}, {value: "Average", label: "Average", icon: <Zap className="w-4 h-4 text-yellow-500" />}, {value: "Bad", label: "Bad", icon: <Zap className="w-4 h-4 text-red-500" />}, {value: "Crisis", label: "Crisis", icon: <Zap className="w-4 h-4 text-red-700" />}];
@@ -115,11 +119,7 @@ export function DailyInputForm({ onGenerate, onLogMetrics, isGenerating, default
   const sleepinessLevels = ["Not Sleepy", "Slightly Sleepy", "Moderately Sleepy", "Very Sleepy"];
 
   const onSubmitAiForm = (data: AiInputFormValues) => {
-    const dataToSubmit = {
-      ...data,
-      isMedicated: data.isMedicated === 'yes', // Convert to boolean
-    };
-    onGenerate(dataToSubmit);
+    onGenerate(data); // No need to convert isMedicated here if DailyInputFormAiValues matches GenerateDailyScheduleInput
   };
 
 
@@ -130,7 +130,7 @@ export function DailyInputForm({ onGenerate, onLogMetrics, isGenerating, default
           <CardTitle className="font-headline flex items-center"><Info className="mr-2 h-5 w-5 text-primary" />Plan Your Day</CardTitle>
           <CardDescription>
             Tell us how you're feeling to get a personalized schedule and tips. 
-            The current time is {String(dynamicCurrentHour).padStart(2, '0')}:00. This app learns from your inputs and logged metrics to provide increasingly tailored advice over time!
+            The current time is approximately {String(aiForm.getValues('currentHour')).padStart(2, '0')}:00 ({aiForm.getValues('timeOfDay')}). This app aims to learn from your inputs and logged metrics to provide increasingly tailored advice over time!
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -286,6 +286,18 @@ export function DailyInputForm({ onGenerate, onLogMetrics, isGenerating, default
                     <FormMessage />
                   </FormItem>
                 )}
+              />
+              {/* Hidden field for timeOfDay - it's now derived and set by useEffect */}
+              <FormField
+                control={aiForm.control}
+                name="timeOfDay"
+                render={({ field }) => <Input type="hidden" {...field} />}
+              />
+               {/* Hidden field for currentHour - it's now derived and set by useEffect */}
+              <FormField
+                control={aiForm.control}
+                name="currentHour"
+                render={({ field }) => <Input type="hidden" {...field} />}
               />
               <Button type="submit" disabled={isGenerating} className="w-full md:w-auto">
                 {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}

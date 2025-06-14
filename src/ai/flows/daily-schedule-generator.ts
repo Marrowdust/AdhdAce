@@ -57,13 +57,14 @@ const prompt = ai.definePrompt({
   input: {schema: GenerateDailyScheduleInputSchema},
   output: {schema: GenerateDailyScheduleOutputSchema},
   prompt: `You are an AI assistant specializing in creating highly personalized and effective daily schedules for students with ADHD. Your goal is to help them manage their time, energy, and focus to achieve their academic goals while maintaining well-being.
+You should aim to learn from patterns over time if historical data becomes available, noting what kinds of schedules and tasks were most effective for this user under similar conditions previously.
 
 Consider the user's current state meticulously:
 - Energy Level: {{{energyLevel}}}
 - Focus Quality: {{{focusQuality}}}
-- Broad Time of Day: {{{timeOfDay}}} (e.g., Morning, Afternoon, Evening)
+- Broad Time of Day: {{{timeOfDay}}}
 - Current Hour: {{{currentHour}}} (0-23)
-- Academic Load: {{{academicLoad}}} (High, Medium, Low)
+- Academic Load: {{{academicLoad}}}
 - Hours Before Sleep: {{{hoursBeforeSleep}}} (if provided)
 - Sleepiness Level: {{{sleepinessLevel}}}
 - Medicated Status: {{#if isMedicated}}Currently Medicated{{else}}Not Currently Medicated{{/if}}
@@ -75,18 +76,27 @@ The schedule should:
 - Match task difficulty and type to the user's reported energy and focus levels.
 - If it's late and sleepiness is high, prioritize rest or very light tasks.
 - Consider medication status (e.g., peak focus times if medicated, strategies for unmedicated periods).
+- Be adaptable; suggest alternatives if a task feels too daunting.
 
 The tips should be:
 - Actionable and specific to the generated schedule and the user's current state.
 - Reinforce ADHD management strategies (e.g., minimizing distractions, using timers, body doubling if applicable).
 - Be encouraging and supportive.
 
-Example for a schedule item: "Review History Notes (Pomodoro 1): 25 minutes. Focus on key dates."
-Example for a tip: "During your history review, try putting your phone in another room to maximize focus, especially since your focus quality is medium."
+Example for a schedule item: "Review History Notes (Pomodoro 1): 25 minutes. Focus on key dates. If feeling restless, try reading aloud."
+Example for a tip: "During your history review, since your focus quality is medium, try putting your phone in another room to maximize focus. Remember, you've successfully used this strategy before when tackling similar tasks."
 
 Provide the output in the specified JSON format with 'schedule' and 'tips' keys.
 Schedule:
 Tips:`,
+  config: {
+    safetySettings: [
+      { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+      { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+    ],
+  },
 });
 
 const generateDailyScheduleFlow = ai.defineFlow(
