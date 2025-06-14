@@ -6,21 +6,34 @@ echo "🚀 ADHD Ace Installer"
 echo "========================="
 
 # ----------------------------
-# Paths & Constants
+# Ask for Google API Key
+# ----------------------------
+read -p "🔐 Enter your Google AI API Key: " api_key
+
+# ----------------------------
+# Define Paths
 # ----------------------------
 REPO_URL="https://github.com/Marrowdust/AdhdAce.git"
 INSTALL_PARENT="$HOME/adhdace"
 INSTALL_DIR="$INSTALL_PARENT/AdhdAce"
 SCRIPT_PATH="$HOME/start-adhdace.sh"
 DESKTOP_FILE="$HOME/.local/share/applications/adhdace.desktop"
-ICON_SOURCE="./adhdace-icon.png"
 ICON_DEST="$HOME/.local/share/icons/adhdace-icon.png"
 LOG="/tmp/adhdace_next_output.log"
+
+# ----------------------------
+# Delete existing .desktop file if exists
+# ----------------------------
+if [ -f "$DESKTOP_FILE" ]; then
+  echo "🗑️ Removing existing desktop shortcut..."
+  rm "$DESKTOP_FILE"
+fi
 
 # ----------------------------
 # Clone the repository
 # ----------------------------
 echo "📦 Cloning AdhdAce repository..."
+rm -rf "$INSTALL_PARENT"
 mkdir -p "$INSTALL_PARENT"
 git clone "$REPO_URL" "$INSTALL_DIR"
 
@@ -33,16 +46,10 @@ echo "📚 Installing Node dependencies..."
 npm install
 
 # ----------------------------
-# Setup .env file
+# Create new .env file
 # ----------------------------
-if [ ! -f ".env" ]; then
-  echo "⚙️ Setting up .env file..."
-  cp .env.example .env
-  read -p "🔐 Enter your Google AI API Key: " api_key
-  echo "GOOGLE_API_KEY=\"$api_key\"" >> .env
-else
-  echo "✅ .env already exists. Skipping."
-fi
+echo "⚙️ Creating .env file with your API key..."
+echo "GOOGLE_API_KEY=\"$api_key\"" > .env
 
 # ----------------------------
 # Create run script
@@ -71,19 +78,7 @@ EOF
 chmod +x "$SCRIPT_PATH"
 
 # ----------------------------
-# Handle icon
-# ----------------------------
-echo "🖼️ Installing app icon..."
-mkdir -p "$(dirname "$ICON_DEST")"
-if [ -f "$ICON_SOURCE" ]; then
-  cp "$ICON_SOURCE" "$ICON_DEST"
-  echo "✅ Icon installed."
-else
-  echo "⚠️ Icon file ($ICON_SOURCE) not found. You can place a PNG file there later."
-fi
-
-# ----------------------------
-# Create .desktop file
+# Create desktop shortcut
 # ----------------------------
 echo "🧩 Creating desktop launcher..."
 mkdir -p "$(dirname "$DESKTOP_FILE")"
@@ -104,5 +99,5 @@ update-desktop-database "$HOME/.local/share/applications/"
 # Done!
 # ----------------------------
 echo "✅ Installation complete!"
-echo "🧠 You can now search 'AdhdAce App' in your system launcher or run:"
+echo "🧠 You can now run it from your system launcher or with:"
 echo "   bash $SCRIPT_PATH"
